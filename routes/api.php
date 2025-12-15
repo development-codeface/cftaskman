@@ -20,6 +20,7 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::post('/category/store', [CategoryController::class, 'store']);
     Route::get('/category/list', [CategoryController::class, 'index']);
     Route::post('/project/store', [ProjectController::class, 'store']);
+    Route::post('/project/update-status', [ProjectController::class, 'updateStatus']);
     Route::get('/project/list', [ProjectController::class, 'index']);
     Route::post('/project/assign/user', [ProjectController::class, 'projectAssign']);
     Route::post('/project/assign/list/{id}', [ProjectController::class, 'projectAssignList']);
@@ -29,6 +30,7 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::post('/tasks/update-status', [TaskController::class, 'updateStatus']);
     Route::get('/tasks/user/{user_id}', [TaskController::class, 'getUserTasks']);
     Route::post('/tasks/comment', [TaskController::class, 'addComment']);
+    Route::get('/tasks/list', [TaskController::class, 'taskList']);
     Route::get('/notifications/user/{user_id}', [NotificationController::class, 'getUserNotifications']);
     Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
     Route::post('/save-fcm-token', [FCMController::class, 'saveToken']);

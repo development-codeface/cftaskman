@@ -45,7 +45,8 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'phone'    => 'required',
             'name'     => 'required',
-            'role'     => 'required'
+            'role'     => 'required',
+            'category_id' => 'required|exists:categories,id'
         ]);
 
         if ($validator->fails()) {
@@ -62,19 +63,29 @@ class UserController extends Controller
             $status = $request->status;
         }
 
-        $create = User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make('password'),
             'role'     => $request->role,
             'phone'   => $request->phone,
+            'category_id' =>$request->category_id,
             'status'  => $status
         ]);
 
         return response()->json([
-            'status' => true,
-            'message' => 'User created successfully',
-            'user_id' => $create->id
+        'status' => true,
+        'message' => 'User created successfully',
+        'data' => [
+            'user_id'     => $user->id,
+            // 'name'        => $user->name,
+            // 'email'       => $user->email,
+            // 'phone'       => $user->phone,
+            // 'role'        => $user->role,
+            // 'status'      => $user->status,
+            'category_id' => $user->category_id,
+            'category_name' => $user->category?->name
+        ]
         ]);
     }
 

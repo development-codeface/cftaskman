@@ -20,7 +20,8 @@ class TaskController extends Controller
             'project_id'  => 'required|exists:projects,id',
             'title'       => 'required|string',
             'description' => 'nullable|string',
-            'deadline'    => 'nullable|date',
+            'start_date'   => 'nullable|date',
+            'end_date'     => 'nullable|date',
             'assigned_to' => 'nullable|exists:users,id'
         ]);
 
@@ -97,12 +98,11 @@ class TaskController extends Controller
     }
 
     //  GET TASKS OF EMPLOYEE
-   
     public function getUserTasks($user_id)
     {
         $tasks = Tasks::where('assigned_to', $user_id)
-            ->select('id as task_id', 'title', 'deadline', 'status')
-            ->orderBy('deadline', 'asc')
+            ->select('id as task_id', 'title', 'start_date', 'end_date', 'status')
+            ->orderBy('end_date', 'asc')
             ->get();
 
         return response()->json([
@@ -145,4 +145,55 @@ class TaskController extends Controller
             'message' => 'Comment added'
         ]);
     }
+
+
+
+    public function taskList()
+    {
+        $tasks = Tasks::with([
+            'project:id,title',
+            'assignedUser:id,name',
+            'comments:id,task_id,comment,created_at',
+            'worklogs:id,task_id,work_date,hours,description,created_at'
+        ])->get();
+
+        $response = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'startDate' => $task->start_date,
+                'endDate' => $task->end_date,
+                'projectid' => $task->project_id,
+                'projectname' => $task->project?->title,
+                'status' => $task->status,
+                'assignedEmployee' => $task->assignedUser?->name,
+
+                // ✅ Comments
+                'comments' => $task->comments->map(function ($comment) {
+                    return [
+                        'message' => $comment->comment,
+                        'createdAt' => $comment->created_at->format('Y-m-d H:i')
+                    ];
+                }),
+
+                // ✅ Worklogs (from your table)
+                'worklogs' => $task->worklogs->map(function ($log) {
+                    return [
+                        'work_date' => $log->work_date,
+                        'hours' => $log->hours,
+                        'description' => $log->description,
+                        'createdAt' => $log->created_at->format('Y-m-d H:i')
+                    ];
+                })
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'tasks' => $response
+        ]);
+    }
+
+
 }

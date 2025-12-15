@@ -25,7 +25,8 @@ class User extends Authenticatable
         'role',
         'status',
         'phone',
-        'status'
+        'status',
+        'category_id'
     ];
 
     /**
@@ -49,5 +50,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+     // ✅ Relationship: User belongs to Category
+    public function category()
+    {
+        return $this->belongsTo(Categories::class, 'category_id');
     }
 }
