@@ -65,7 +65,7 @@ class ProjectController extends Controller
             'start_date'  => 'nullable|date',
             'end_date'    => 'nullable|date',
             'created_by'  => 'required|exists:users,id',
-            'status'      => 'nullable|in:to_do,pending,in_progress,completed'
+            'status'      => 'nullable|in:todo,pending,ongoing,completed'
         ]);
 
         if ($validator->fails()) {
@@ -105,7 +105,7 @@ class ProjectController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'projectId' => 'required|exists:projects,id',
-            'status'    => 'required|in:pending,in_progress,completed'
+            'status'    => 'required|in:todo,pending,ongoing,completed'
         ]);
 
         if ($validator->fails()) {

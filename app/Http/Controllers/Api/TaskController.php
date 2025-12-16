@@ -60,7 +60,7 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'task_id' => 'required|exists:tasks,id',
-            'status' => 'required|in:todo,in_progress,done'
+            'status' => 'required|in:todo,ongoing,done'
         ]);
 
         Tasks::where('id', $validated['task_id'])
