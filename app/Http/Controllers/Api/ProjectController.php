@@ -49,15 +49,12 @@ class ProjectController extends Controller
 
     // ✅ VALIDATION
         $validator = Validator::make($request->all(), [
-           'category_id' => 'required|exists:categories,id',
             'title'       => 'required|string',
             'description' => 'required|string',
-            'startdate'   => 'nullable|date',
-            'enddate'     => 'nullable|date',
             'start_date'  => 'nullable|date',
             'end_date'    => 'nullable|date',
             'created_by'  => 'required|exists:users,id',
-            'status'      => 'nullable|in:pending,in_progress,completed'
+            'status'      => 'nullable|in:to_do,pending,in_progress,completed'
         ]);
 
         if ($validator->fails()) {
@@ -69,17 +66,16 @@ class ProjectController extends Controller
         }
 
         // ✅ MAP DATE FIELDS (support both formats)
-        $startDate = $request->startdate ?? $request->start_date;
-        $endDate   = $request->enddate   ?? $request->end_date;
+        $startDate = $request->start_date;
+        $endDate   = $request->end_date;
 
         $project = Projects::create([
-            'category_id' => $request->category_id,
             'title'       => $request->title,
             'description' => $request->description,
             'start_date'  => $startDate,
             'end_date'    => $endDate,
             'created_by'  => $request->created_by,
-            'status'      => $request->status ?? 'pending'
+            'status'      => $request->status ?? 'to_do'
         ]);
 
         return response()->json([

@@ -15,7 +15,9 @@ class UserController extends Controller
      */
     public function index()
     {
-        $list = User::select('id', 'name', 'email', 'role', 'status')->get();
+        $list = User::with('category:id,name')
+        ->select('id', 'name', 'email', 'role', 'status', 'category_id')
+        ->get();
 
         return response()->json([
             'status' => true,
