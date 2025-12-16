@@ -153,7 +153,8 @@ class TaskController extends Controller
         $tasks = Tasks::with([
             'project:id,title',
             'assignedUser:id,name',
-            'comments:id,task_id,comment,created_at',
+            'comments:id,task_id,user_id,comment,created_at',
+            'comments.user:id,name',
             'worklogs.user:id,name'
         ])->get();
 
@@ -172,6 +173,8 @@ class TaskController extends Controller
                 // ✅ Comments
                 'comments' => $task->comments->map(function ($comment) {
                     return [
+                        'user_id'   => $comment->user_id,
+                        'user_name' => $comment->user?->name,
                         'message' => $comment->comment,
                         'createdAt' => $comment->created_at
                             ? $comment->created_at->format('Y-m-d H:i')
@@ -204,7 +207,8 @@ class TaskController extends Controller
         $task = Tasks::with([
             'project:id,title',
             'assignedUser:id,name',
-            'comments:id,task_id,comment,created_at',
+            'comments:id,user_id,task_id,comment,created_at',
+            'comments.user:id,name',
             'worklogs.user:id,name'
         ])->find($taskId);
 
@@ -228,6 +232,8 @@ class TaskController extends Controller
 
             'comments' => $task->comments->map(function ($comment) {
                 return [
+                    'user_id'   => $comment->user_id,
+                    'user_name' => $comment->user?->name,
                     'message' => $comment->comment,
                     'createdAt' => $comment->created_at->format('Y-m-d H:i')
                 ];
