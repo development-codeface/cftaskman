@@ -148,13 +148,13 @@ class TaskController extends Controller
 
 
 
-    public function taskList()
+     public function taskList()
     {
         $tasks = Tasks::with([
             'project:id,title',
             'assignedUser:id,name',
             'comments:id,task_id,comment,created_at',
-            'worklogs:id,task_id,work_date,hours,description,created_at'
+            'worklogs.user:id,name'
         ])->get();
 
         $response = $tasks->map(function ($task) {
@@ -173,17 +173,23 @@ class TaskController extends Controller
                 'comments' => $task->comments->map(function ($comment) {
                     return [
                         'message' => $comment->comment,
-                        'createdAt' => $comment->created_at->format('Y-m-d H:i')
+                        'createdAt' => $comment->created_at
+                            ? $comment->created_at->format('Y-m-d H:i')
+                            : null
                     ];
                 }),
 
-                // ✅ Worklogs (from your table)
+                // ✅ Worklogs with username
                 'worklogs' => $task->worklogs->map(function ($log) {
                     return [
+                        'user_id'   => $log->user_id,
+                        'user_name' => $log->user?->name,
                         'work_date' => $log->work_date,
-                        'hours' => $log->hours,
+                        'hours'     => $log->hours,
                         'description' => $log->description,
-                        'createdAt' => $log->created_at->format('Y-m-d H:i')
+                        'createdAt' => $log->created_at
+                            ? $log->created_at->format('Y-m-d H:i')
+                            : null
                     ];
                 })
             ];
@@ -191,9 +197,62 @@ class TaskController extends Controller
 
         return response()->json([
             'status' => true,
-            'tasks' => $response
+            'tasks'  => $response
         ]);
     }
+
+    public function taskDetails($taskId)
+    {
+        $task = Tasks::with([
+            'project:id,title',
+            'assignedUser:id,name',
+            'comments:id,task_id,comment,created_at',
+            'worklogs.user:id,name'
+        ])->find($taskId);
+
+        if (!$task) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Task not found'
+            ], 404);
+        }
+
+        $response = [
+            'id' => $task->id,
+            'title' => $task->title,
+            'description' => $task->description,
+            'startDate' => $task->start_date,
+            'endDate' => $task->end_date,
+            'projectid' => $task->project_id,
+            'projectname' => $task->project?->title,
+            'status' => $task->status,
+            'assignedEmployee' => $task->assignedUser?->name,
+
+            'comments' => $task->comments->map(function ($comment) {
+                return [
+                    'message' => $comment->comment,
+                    'createdAt' => $comment->created_at->format('Y-m-d H:i')
+                ];
+            }),
+
+            'worklogs' => $task->worklogs->map(function ($log) {
+                return [
+                    'user_id'   => $log->user_id,
+                    'user_name' => $log->user?->name,
+                    'work_date' => $log->work_date,
+                    'hours'     => $log->hours,
+                    'description' => $log->description,
+                    'createdAt' => $log->created_at->format('Y-m-d H:i')
+                ];
+            })
+        ];
+
+        return response()->json([
+            'status' => true,
+            'task' => $response
+        ]);
+    }
+
 
 
 }

@@ -31,6 +31,7 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::get('/tasks/user/{user_id}', [TaskController::class, 'getUserTasks']);
     Route::post('/tasks/comment', [TaskController::class, 'addComment']);
     Route::get('/tasks/list', [TaskController::class, 'taskList']);
+    Route::get('tasks/{taskId}', [TaskController::class, 'taskDetails']);
     Route::get('/notifications/user/{user_id}', [NotificationController::class, 'getUserNotifications']);
     Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
     Route::post('/save-fcm-token', [FCMController::class, 'saveToken']);
