@@ -184,10 +184,8 @@ class TaskController extends Controller
                     return [
                         'user_id'   => $log->user_id,
                         'user_name' => $log->user?->name,
-                        'work_date' => $log->work_date,
                         'hours'     => $log->hours,
-                        'description' => $log->description,
-                        'createdAt' => $log->created_at
+                       'createdAt' => $log->created_at
                             ? $log->created_at->format('Y-m-d H:i')
                             : null
                     ];
@@ -239,9 +237,7 @@ class TaskController extends Controller
                 return [
                     'user_id'   => $log->user_id,
                     'user_name' => $log->user?->name,
-                    'work_date' => $log->work_date,
                     'hours'     => $log->hours,
-                    'description' => $log->description,
                     'createdAt' => $log->created_at->format('Y-m-d H:i')
                 ];
             })
