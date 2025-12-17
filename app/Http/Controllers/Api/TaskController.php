@@ -255,6 +255,118 @@ class TaskController extends Controller
         ]);
     }
 
+    public function tasksByUserAndProject(Request $request)
+    {
+        
+        $validated = $request->validate([
+            'user_id'    => 'required|exists:users,id',
+            'project_id' => 'required|exists:projects,id'
+        ]);
+
+        $tasks = Tasks::with([
+            'project:id,title',
+            'assignedUser:id,name',
+            'comments:id,task_id,user_id,comment,created_at',
+            'comments.user:id,name',
+            'worklogs.user:id,name'
+        ])
+        ->where('assigned_to', $validated['user_id'])
+        ->where('project_id', $validated['project_id'])
+        ->get();
+
+        $response = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'startDate' => $task->start_date,
+                'endDate' => $task->end_date,
+                'status' => $task->status,
+                'projectname' => $task->project?->title,
+                'assignedEmployee' => $task->assignedUser?->name,
+
+                'comments' => $task->comments->map(function ($comment) {
+                    return [
+                        'user_id' => $comment->user_id,
+                        'user_name' => $comment->user?->name,
+                        'message' => $comment->comment,
+                        'createdAt' => optional($comment->created_at)->format('Y-m-d H:i')
+                    ];
+                }),
+
+                'worklogs' => $task->worklogs->map(function ($log) {
+                    return [
+                        'user_id' => $log->user_id,
+                        'user_name' => $log->user?->name,
+                        'hours' => $log->hours,
+                        'createdAt' => optional($log->created_at)->format('Y-m-d H:i')
+                    ];
+                })
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'tasks' => $response
+        ]);
+    }
+
+    public function tasksByProject($projectId)
+    {
+        $tasks = Tasks::with([
+            'project:id,title',
+            'assignedUser:id,name',
+            'comments:id,task_id,user_id,comment,created_at',
+            'comments.user:id,name',
+            'worklogs.user:id,name'
+        ])
+        ->where('project_id', $projectId)
+        ->get();
+
+        if ($tasks->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No tasks found for this project'
+            ]);
+        }
+
+        $response = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'startDate' => $task->start_date,
+                'endDate' => $task->end_date,
+                'status' => $task->status,
+                'assignedEmployee' => $task->assignedUser?->name,
+
+                'comments' => $task->comments->map(function ($comment) {
+                    return [
+                        'user_id' => $comment->user_id,
+                        'user_name' => $comment->user?->name,
+                        'message' => $comment->comment,
+                        'createdAt' => optional($comment->created_at)->format('Y-m-d H:i')
+                    ];
+                }),
+
+                'worklogs' => $task->worklogs->map(function ($log) {
+                    return [
+                        'user_id' => $log->user_id,
+                        'user_name' => $log->user?->name,
+                        'hours' => $log->hours,
+                        'createdAt' => optional($log->created_at)->format('Y-m-d H:i')
+                    ];
+                })
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'tasks' => $response
+        ]);
+    }
+
+
 
 
 }

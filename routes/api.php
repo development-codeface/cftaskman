@@ -29,6 +29,8 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::post('/tasks/create', [TaskController::class, 'create']);
     Route::post('/tasks/update-status', [TaskController::class, 'updateStatus']);
     Route::get('/tasks/user/{user_id}', [TaskController::class, 'getUserTasks']);
+    Route::post('tasks/by-user-project', [TaskController::class, 'tasksByUserAndProject']);
+    Route::get('tasks/by-project/{projectId}', [TaskController::class, 'tasksByProject']);
     Route::post('/tasks/comment', [TaskController::class, 'addComment']);
     Route::get('/tasks/list', [TaskController::class, 'taskList']);
     Route::get('tasks/{taskId}', [TaskController::class, 'taskDetails']);
