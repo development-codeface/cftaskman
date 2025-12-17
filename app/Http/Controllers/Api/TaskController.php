@@ -150,13 +150,24 @@ class TaskController extends Controller
 
      public function taskList()
     {
-        $tasks = Tasks::with([
+            $tasks = Tasks::with([
             'project:id,title',
             'assignedUser:id,name',
             'comments:id,task_id,user_id,comment,created_at',
             'comments.user:id,name',
             'worklogs.user:id,name'
-        ])->get();
+        ])
+        ->orderByRaw("
+            CASE status
+                WHEN 'todo' THEN 1
+                WHEN 'pending' THEN 2
+                WHEN 'ongoing' THEN 3
+                WHEN 'completed' THEN 4
+                ELSE 5
+            END
+        ")
+        ->orderBy('end_date', 'asc')
+        ->get();
 
         $response = $tasks->map(function ($task) {
             return [
@@ -264,14 +275,24 @@ class TaskController extends Controller
         ]);
 
         $tasks = Tasks::with([
-            'project:id,title',
-            'assignedUser:id,name',
-            'comments:id,task_id,user_id,comment,created_at',
-            'comments.user:id,name',
-            'worklogs.user:id,name'
+        'project:id,title',
+        'assignedUser:id,name',
+        'comments:id,task_id,user_id,comment,created_at',
+        'comments.user:id,name',
+        'worklogs.user:id,name'
         ])
         ->where('assigned_to', $validated['user_id'])
         ->where('project_id', $validated['project_id'])
+        ->orderByRaw("
+            CASE status
+                WHEN 'todo' THEN 1
+                WHEN 'pending' THEN 2
+                WHEN 'ongoing' THEN 3
+                WHEN 'completed' THEN 4
+                ELSE 5
+            END
+        ")
+        ->orderBy('end_date', 'asc')
         ->get();
 
         $response = $tasks->map(function ($task) {
@@ -321,8 +342,18 @@ class TaskController extends Controller
             'worklogs.user:id,name'
         ])
         ->where('project_id', $projectId)
+        ->orderByRaw("
+            CASE status
+                WHEN 'todo' THEN 1
+                WHEN 'pending' THEN 2
+                WHEN 'ongoing' THEN 3
+                WHEN 'completed' THEN 4
+                ELSE 5
+            END
+        ")
+        ->orderBy('end_date', 'asc')
         ->get();
-
+        
         if ($tasks->isEmpty()) {
             return response()->json([
                 'status' => false,

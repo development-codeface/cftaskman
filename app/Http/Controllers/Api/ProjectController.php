@@ -23,33 +23,43 @@ class ProjectController extends Controller
     //     ]);
     // }
 
-    public function index()
-{
-    $list = Projects::select(
-            'id',
-            'title',
-            'start_date',
-            'end_date',
-            'description',
-            'status'
-        )
-        ->get()
-        ->map(function ($item) {
-            return [
-                'id'          => $item->id,
-                'title'       => $item->title,
-                'start_date'  => $item->start_date,
-                'end_date'    => $item->end_date,
-                'description' => $item->description,
-                'status'      => $item->status,
-            ];
-        });
+   public function index()
+    {
+        $list = Projects::select(
+                'id',
+                'title',
+                'start_date',
+                'end_date',
+                'description',
+                'status'
+            )
+            ->orderByRaw("
+                CASE status
+                    WHEN 'todo' THEN 1
+                    WHEN 'pending' THEN 2
+                    WHEN 'ongoing' THEN 3
+                    WHEN 'completed' THEN 4
+                    ELSE 5
+                END
+            ")
+            ->orderBy('end_date', 'asc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id'          => $item->id,
+                    'title'       => $item->title,
+                    'start_date'  => $item->start_date,
+                    'end_date'    => $item->end_date,
+                    'description' => $item->description,
+                    'status'      => $item->status,
+                ];
+            });
 
-    return response()->json([
-        'status'   => true,
-        'projects' => $list
-    ]);
-}
+        return response()->json([
+            'status'   => true,
+            'projects' => $list
+        ]);
+    }
 
     /**
      * Store a newly created resource in storage.
