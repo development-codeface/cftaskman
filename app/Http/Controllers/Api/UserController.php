@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UserCreatedMail;
 
 class UserController extends Controller
 {
@@ -65,6 +67,8 @@ class UserController extends Controller
             $status = $request->status;
         }
 
+         $plainPassword = $request->password;
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -74,6 +78,10 @@ class UserController extends Controller
             'category_id' =>$request->category_id,
             'status'  => $status
         ]);
+
+          Mail::to($user->email)->send(
+            new UserCreatedMail($user->email, $plainPassword)
+        );
 
         return response()->json([
         'status' => true,
