@@ -13,12 +13,16 @@ class TaskCreateMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $title;
+    public $project_title;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($project_title, $title)
     {
-        //
+        $this->project_title = $project_title;
+        $this->title = $title;
     }
 
     /**
@@ -27,7 +31,7 @@ class TaskCreateMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Task Create Mail',
+            subject: 'Task Asign Mail',
         );
     }
 
@@ -37,7 +41,7 @@ class TaskCreateMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.task_created',
         );
     }
 
