@@ -98,7 +98,7 @@ class TaskController extends Controller
     }
 
     //  GET TASKS OF EMPLOYEE
-    public function taskListByUser($userId)
+    public function getUserTasks($userId)
     {
         $tasks = Tasks::with([
             'project:id,title',
