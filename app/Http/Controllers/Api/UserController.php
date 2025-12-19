@@ -91,6 +91,34 @@ class UserController extends Controller
         ]);
     }
 
+
+public function deactivateUser(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $user = User::find($validated['user_id']);
+
+        // If already inactive
+        if ($user->status === 'inactive') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'User is already inactive'
+            ], 400);
+        }
+
+        $user->update([
+            'status' => 'inactive'
+        ]);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'User deactivated successfully'
+        ]);
+    }
+
+
     /**
      * Display the specified resource.
      */
