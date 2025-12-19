@@ -98,18 +98,68 @@ class TaskController extends Controller
     }
 
     //  GET TASKS OF EMPLOYEE
-    public function getUserTasks($user_id)
+    public function getUserTasks($userId)
     {
-        $tasks = Tasks::where('assigned_to', $user_id)
-            ->select('id as task_id', 'title', 'start_date', 'end_date', 'status')
-            ->orderBy('end_date', 'asc')
-            ->get();
+        $tasks = Tasks::with([
+            'project:id,title',
+            'assignedUser:id,name',
+            'comments:id,task_id,user_id,comment,created_at',
+            'comments.user:id,name',
+            'worklogs.user:id,name'
+        ])
+        ->where('assigned_to', $userId) // ✅ FILTER BY USER
+        ->orderByRaw("
+            CASE status
+                WHEN 'todo' THEN 1
+                WHEN 'pending' THEN 2
+                WHEN 'ongoing' THEN 3
+                WHEN 'completed' THEN 4
+                ELSE 5
+            END
+        ")
+        ->orderBy('end_date', 'asc')
+        ->get();
+
+        $response = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'startDate' => $task->start_date,
+                'endDate' => $task->end_date,
+                'projectid' => $task->project_id,
+                'projectname' => $task->project?->title,
+                'status' => $task->status,
+                'assignedEmployee' => $task->assignedUser?->name,
+
+                // ✅ Comments
+                'comments' => $task->comments->map(function ($comment) {
+                    return [
+                        'user_id'   => $comment->user_id,
+                        'user_name' => $comment->user?->name,
+                        'message'   => $comment->comment,
+                        'createdAt' => optional($comment->created_at)->format('Y-m-d H:i')
+                    ];
+                }),
+
+                // ✅ Worklogs with username
+                'worklogs' => $task->worklogs->map(function ($log) {
+                    return [
+                        'user_id'   => $log->user_id,
+                        'user_name' => $log->user?->name,
+                        'hours'     => $log->hours,
+                        'createdAt' => optional($log->created_at)->format('Y-m-d H:i')
+                    ];
+                })
+            ];
+        });
 
         return response()->json([
             'status' => true,
-            'tasks'  => $tasks
+            'tasks'  => $response
         ]);
     }
+
 
     //  ADD COMMENT
      public function addComment(Request $request)

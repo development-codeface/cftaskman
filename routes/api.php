@@ -17,6 +17,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware([CheckAccessToken::class])->group(function () {
     Route::post('/user/store', [UserController::class, 'store']);
     Route::get('/user/list', [UserController::class, 'index']);
+    Route::post('users/deactivate', [UserController::class, 'deactivateUser']);
     Route::post('/category/store', [CategoryController::class, 'store']);
     Route::get('/category/list', [CategoryController::class, 'index']);
     Route::post('/project/store', [ProjectController::class, 'store']);

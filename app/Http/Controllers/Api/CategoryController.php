@@ -12,15 +12,18 @@ class CategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+   public function index()
     {
-        $list = Categories::select('id', 'name')->get();
+        $list = Categories::select('id', 'name')
+            ->orderBy('id', 'desc') // ✅ DESC order
+            ->get();
 
         return response()->json([
             'status' => true,
             'categories' => $list
         ]);
     }
+
 
     /**
      * Show the form for creating a new resource.
