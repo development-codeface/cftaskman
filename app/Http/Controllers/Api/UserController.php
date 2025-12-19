@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UserCreatedMail;
 
 class UserController extends Controller
 {
@@ -15,7 +17,9 @@ class UserController extends Controller
      */
     public function index()
     {
-        $list = User::select('id', 'name', 'email', 'role', 'status')->get();
+        $list = User::with('category:id,name')
+        ->select('id', 'name', 'email', 'role', 'status', 'category_id')
+        ->get();
 
         return response()->json([
             'status' => true,
@@ -45,7 +49,8 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'phone'    => 'required',
             'name'     => 'required',
-            'role'     => 'required'
+            'role'     => 'required',
+            'category_id' => 'required|exists:categories,id'
         ]);
 
         if ($validator->fails()) {
@@ -62,21 +67,65 @@ class UserController extends Controller
             $status = $request->status;
         }
 
-        $create = User::create([
+         $plainPassword = $request->password;
+
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make('password'),
             'role'     => $request->role,
             'phone'   => $request->phone,
+            'category_id' =>$request->category_id,
             'status'  => $status
         ]);
 
+          Mail::to($user->email)->send(
+            new UserCreatedMail($user->email, $plainPassword)
+        );
+
         return response()->json([
-            'status' => true,
-            'message' => 'User created successfully',
-            'user_id' => $create->id
+        'status' => true,
+        'message' => 'User created successfully',
+        'data' => [
+            'user_id'     => $user->id,
+            // 'name'        => $user->name,
+            // 'email'       => $user->email,
+            // 'phone'       => $user->phone,
+            // 'role'        => $user->role,
+            // 'status'      => $user->status,
+            'category_id' => $user->category_id,
+            'category_name' => $user->category?->name
+        ]
         ]);
     }
+
+
+public function deactivateUser(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $user = User::find($validated['user_id']);
+
+        // If already inactive
+        if ($user->status === 'inactive') {
+            return response()->json([
+                'status'  => false,
+                'message' => 'User is already inactive'
+            ], 400);
+        }
+
+        $user->update([
+            'status' => 'inactive'
+        ]);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'User deactivated successfully'
+        ]);
+    }
+
 
     /**
      * Display the specified resource.
