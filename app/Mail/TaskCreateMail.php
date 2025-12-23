@@ -41,7 +41,7 @@ class TaskCreateMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.task_created',
+            view: 'emails.task_create',
         );
     }
 
