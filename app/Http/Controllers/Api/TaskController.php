@@ -9,6 +9,7 @@ use App\Models\Tasks;
 use App\Models\TaskComments;
 use App\Models\Notifications;
 use App\Models\Projects;
+use App\Models\ProjectAssignments;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TaskCreateMail;
@@ -33,6 +34,19 @@ class TaskController extends Controller
 
         // ---------- SEND NOTIFICATION ----------
         if (!empty($data['assigned_to'])) {
+
+            ProjectAssignment::firstOrCreate(
+            [
+                'project_id' => $data['project_id'],
+                'user_id'    => $data['assigned_to']
+            ],
+            [
+                'assigned_by' => $data['created_by'],
+                'assigned_at' => now()
+            ]
+        );
+
+            
             Notifications::create([
                 'user_id' => $data['assigned_to'],
                 'title'   => "New Task Assigned",

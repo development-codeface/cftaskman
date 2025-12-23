@@ -170,7 +170,7 @@ class ProjectController extends Controller
      */
     public function projectAssignList($id)
     {
-        $list = ProjectAssignments::where('user_id', $id)->with('project:id,title,status')->get()->pluck('project');
+        $list = ProjectAssignments::where('user_id', $id)->with('project:id,title,start_date,end_date,description,status')->get()->pluck('project');
 
         return response()->json([
             'status' => true,

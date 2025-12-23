@@ -100,7 +100,33 @@ class UserController extends Controller
     }
 
 
-public function deactivateUser(Request $request)
+    public function deactivateUser(Request $request)
+        {
+            $validated = $request->validate([
+                'user_id' => 'required|exists:users,id'
+            ]);
+
+            $user = User::find($validated['user_id']);
+
+            // If already inactive
+            if ($user->status === 'inactive') {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'User is already inactive'
+                ], 400);
+            }
+
+            $user->update([
+                'status' => 'inactive'
+            ]);
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'User deactivated successfully'
+            ]);
+        }
+
+        public function activateUser(Request $request)
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id'
@@ -108,23 +134,23 @@ public function deactivateUser(Request $request)
 
         $user = User::find($validated['user_id']);
 
-        // If already inactive
-        if ($user->status === 'inactive') {
+        if ($user->status === 'active') {
             return response()->json([
                 'status'  => false,
-                'message' => 'User is already inactive'
+                'message' => 'User is already active'
             ], 400);
         }
 
         $user->update([
-            'status' => 'inactive'
+            'status' => 'active'
         ]);
 
         return response()->json([
             'status'  => true,
-            'message' => 'User deactivated successfully'
+            'message' => 'User activated successfully'
         ]);
     }
+
 
 
     /**
