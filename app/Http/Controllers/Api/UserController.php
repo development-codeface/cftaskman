@@ -151,6 +151,21 @@ class UserController extends Controller
         ]);
     }
 
+    public function checkUserStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $user = User::find($validated['user_id']);
+
+        return response()->json([
+            'status'      => true,
+            'user_status' => $user->status,
+            'user_id'     => $user->id,
+            'name'        => $user->name
+        ]);
+    }
 
 
     /**
