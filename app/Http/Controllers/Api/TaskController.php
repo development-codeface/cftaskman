@@ -87,6 +87,53 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'task_id' => 'required|exists:tasks,id',
+            'status'  => 'required|in:todo,pending,ongoing,completed',
+        ]);
+
+        $user = auth()->user();
+
+        $task = Tasks::findOrFail($validated['task_id']);
+        $task->update(['status' => $validated['status']]);
+
+        $firebase = new FirebaseNotificationService();
+
+        // 🔔 Role-based notifications
+        if ($user->role === 'admin') {
+            // Admin updated → notify all users
+            $notifyUsers = User::where('id', '!=', $user->id)->pluck('id');
+        } else {
+            // User updated → notify admins
+            $notifyUsers = User::where('role', 'admin')->pluck('id');
+        }
+
+        foreach ($notifyUsers as $notifyUserId) {
+
+            Notifications::create([
+                'user_id' => $notifyUserId,
+                'title'   => 'Task Status Updated',
+                'message' => "Task '{$task->title}' status changed to {$validated['status']}.",
+                'type'    => 'task',
+                'is_read' => 0
+            ]);
+
+            $firebase->sendToUser(
+                (string)$notifyUserId,
+                'Task Status Updated',
+                "Task '{$task->title}' is now {$validated['status']}.",
+                ['task_id' => (string)$task->id]
+            );
+        }
+        return response()->json([
+            'status'  => true,
+            'message' => 'Status updated successfully'
+        ]);
+    }
+
+
+    public function updateStatusxx(Request $request)
+    {
+        $validated = $request->validate([
+            'task_id' => 'required|exists:tasks,id',
             'status' => 'required|in:todo,pending,ongoing,completed'
         ]);
 
@@ -189,7 +236,58 @@ class TaskController extends Controller
 
 
     //  ADD COMMENT
-    public function addComment(Request $request)
+public function addComment(Request $request)
+{
+    $validated = $request->validate([
+        'task_id' => 'required|exists:tasks,id',
+        'comment' => 'required|string',
+    ]);
+
+    $user = auth()->user(); // logged-in user
+    $task = Tasks::findOrFail($validated['task_id']);
+
+    TaskComments::create([
+        'task_id' => $task->id,
+        'comment' => $validated['comment'],
+        'user_id' => $user->id,
+    ]);
+
+    // 🔔 Decide who to notify
+    if ($user->role === 'admin') {
+        // Admin commented → notify all users
+        $notifyUsers = User::where('id', '!=', $user->id)->pluck('id');
+    } else {
+        // User commented → notify all admins
+        $notifyUsers = User::where('role', 'admin')->pluck('id');
+    }
+
+    $firebase = new FirebaseNotificationService();
+
+    foreach ($notifyUsers as $notifyUserId) {
+
+        Notifications::create([
+            'user_id' => $notifyUserId,
+            'title'   => 'New Task Comment',
+            'message' => "New comment on task '{$task->title}'",
+            'type'    => 'comment',
+            'is_read' => 0
+        ]);
+
+        $firebase->sendToUser(
+            (string)$notifyUserId,
+            'New Task Comment',
+            "New comment on task: {$task->title}",
+            ['task_id' => (string)$task->id]
+        );
+    }
+
+    return response()->json([
+        'status'  => true,
+        'message' => 'Comment added successfully'
+    ]);
+}
+
+    public function addCommentxx(Request $request)
     {
         $validated = $request->validate([
             'task_id' => 'required|exists:tasks,id',
