@@ -70,7 +70,8 @@ class TaskController extends Controller
             $data['assigned_to'],
             "New Task Assigned",
             "You have been assigned: {$data['title']}",
-            ['task_id' => $task->id]
+           // ['task_id' => $task->id]
+           ['task_id' => (string)$task->id]
         );
 
         return response()->json([
@@ -108,13 +109,13 @@ class TaskController extends Controller
                 'is_read' => 0
             ]);
 
-            // $firebase = new FirebaseNotificationService();
-            // $firebase->sendToUser(
-            //     $project_manager_id,
-            //     "Task Completed",
-            //     "Task '{$task->title}' has been completed.",
-            //     ['task_id' => $task->id]
-            // );
+            $firebase = new FirebaseNotificationService();
+            $firebase->sendToUser(
+                $project_manager_id,
+                "Task Completed",
+                "Task '{$task->title}' has been completed.",
+                ['task_id' => (string)$task->id]
+            );
         }
 
         return response()->json([
@@ -208,13 +209,13 @@ class TaskController extends Controller
             'is_read' => 0
         ]);
 
-        // $firebase = new FirebaseNotificationService();
-        // $firebase->sendToUser(
-        //     $task->created_by,
-        //     "New Comment",
-        //     "A new comment was added to your task: {$task->title}",
-        //     ['task_id' => $task->id]
-        // );
+        $firebase = new FirebaseNotificationService();
+        $firebase->sendToUser(
+            $task->created_by,
+            "New Comment",
+            "A new comment was added to your task: {$task->title}",
+            ['task_id' => (string)$task->id]
+        );
 
         return response()->json([
             'status'  => true,
