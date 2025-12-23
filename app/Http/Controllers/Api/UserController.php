@@ -19,6 +19,7 @@ class UserController extends Controller
     {
         $list = User::with('category:id,name')
         ->select('id', 'name', 'email', 'role', 'status', 'category_id')
+        ->orderBy('id', 'desc')
         ->get();
 
         return response()->json([
