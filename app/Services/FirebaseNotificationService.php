@@ -11,7 +11,7 @@ class FirebaseNotificationService {
     private $credentialsFile;
 
     public function __construct() {
-        $this->credentialsFile = storage_path('app/worker-managament-firebase-adminsdk-fbsvc-075de6bedb.json');
+        $this->credentialsFile = storage_path('app/firebase/firebase-service-account.json');
         $this->loadCredentials();
     }
 

@@ -35,7 +35,7 @@ class TaskController extends Controller
         // ---------- SEND NOTIFICATION ----------
         if (!empty($data['assigned_to'])) {
 
-            ProjectAssignment::firstOrCreate(
+            ProjectAssignments::firstOrCreate(
             [
                 'project_id' => $data['project_id'],
                 'user_id'    => $data['assigned_to']
@@ -65,13 +65,13 @@ class TaskController extends Controller
             new TaskCreateMail($project_title, $request->title)
         );
         
-        // $firebase = new FirebaseNotificationService();
-        // $firebase->sendToUser(
-        //     $data['assigned_to'],
-        //     "New Task Assigned",
-        //     "You have been assigned: {$data['title']}",
-        //     ['task_id' => $task->id]
-        // );
+        $firebase = new FirebaseNotificationService();
+        $firebase->sendToUser(
+            $data['assigned_to'],
+            "New Task Assigned",
+            "You have been assigned: {$data['title']}",
+            ['task_id' => $task->id]
+        );
 
         return response()->json([
             'status'  => true,
