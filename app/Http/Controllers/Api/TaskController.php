@@ -27,10 +27,10 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'start_date'   => 'nullable|date',
             'end_date'     => 'nullable|date',
-            'assigned_to' => 'nullable|exists:users,id'
-        ]);
+            'assigned_to' => 'nullable|exists:users,id',
+            'created_by'   => 'required|exists:users,id',
 
-        $data['created_by'] = auth()->id() ?? 1; // or pass from request
+        ]);
 
         // ---------- SEND NOTIFICATION ----------
         if (!empty($data['assigned_to'])) {
@@ -90,10 +90,9 @@ class TaskController extends Controller
             'status'  => 'required|in:todo,pending,ongoing,completed',
         ]);
 
-        $user = auth()->user();
-
         $task = Tasks::findOrFail($validated['task_id']);
         $task->update(['status' => $validated['status']]);
+        $user = User::findOrFail($task->assigned_to);
 
         $firebase = new FirebaseNotificationService();
 
@@ -241,15 +240,16 @@ public function addComment(Request $request)
     $validated = $request->validate([
         'task_id' => 'required|exists:tasks,id',
         'comment' => 'required|string',
+        'user_id' => 'required|exists:users,id'
     ]);
 
-    $user = auth()->user(); // logged-in user
+    $user = User::findOrFail($validated['user_id']); // logged-in user
     $task = Tasks::findOrFail($validated['task_id']);
 
     TaskComments::create([
         'task_id' => $task->id,
         'comment' => $validated['comment'],
-        'user_id' => $user->id,
+        'user_id' => $validated['user_id'],
     ]);
 
     // 🔔 Decide who to notify
