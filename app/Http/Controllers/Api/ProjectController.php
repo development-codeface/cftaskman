@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Projects;
+use App\Models\Tasks;
 use App\Models\ProjectAssignments;
 
 class ProjectController extends Controller
@@ -13,17 +14,62 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    // public function index()
-    // {
-    //     $list = Projects::select('id', 'title', 'status', 'category_id')->with('categoryName')->get();
+   
+    public function index()
+    {
+        $projects = Projects::select('id','title','start_date','end_date','description','status')
+            ->with(['assignments.user:id,name'])
+            ->orderByRaw("
+                CASE status
+                    WHEN 'todo' THEN 1
+                    WHEN 'pending' THEN 2
+                    WHEN 'ongoing' THEN 3
+                    WHEN 'completed' THEN 4
+                    ELSE 5
+                END
+            ")
+            ->orderBy('end_date', 'asc')
+            ->get();
 
-    //     return response()->json([
-    //         'status' => true,
-    //         'projects' => $list
-    //     ]);
-    // }
+        // Get task counts grouped by project_id + assigned_to
+        $taskCounts = Tasks::selectRaw('project_id, assigned_to, COUNT(*) as total')
+            ->groupBy('project_id', 'assigned_to')
+            ->get()
+            ->groupBy(fn($row) => $row->project_id . '_' . $row->assigned_to);
 
-   public function index()
+        $projects = $projects->map(function ($project) use ($taskCounts) {
+
+            $assignedUsers = $project->assignments->map(function ($assign) use ($project, $taskCounts) {
+
+                $key = $project->id . '_' . $assign->user_id;
+                $count = $taskCounts->get($key)?->first()?->total ?? 0;
+
+                return [
+                    'user_id'    => $assign->user_id,
+                    'user_name'  => $assign->user?->name,
+                    'task_count' => $count
+                ];
+            });
+
+            return [
+                'id'            => $project->id,
+                'title'         => $project->title,
+                'start_date'    => $project->start_date,
+                'end_date'      => $project->end_date,
+                'description'   => $project->description,
+                'status'        => $project->status,
+                'assigned_users'=> $assignedUsers
+            ];
+        });
+
+        return response()->json([
+            'status'   => true,
+            'projects' => $projects
+        ]);
+    }
+
+
+   public function index_backup()
     {
         $list = Projects::select(
                 'id',

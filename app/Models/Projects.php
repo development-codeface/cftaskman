@@ -30,4 +30,19 @@ class Projects extends Model
     {
         return $this->belongsTo(Categories::class, 'category_id', 'id')->select('id', 'name');
     }
+
+    public function assignments()
+    {
+        return $this->hasMany(ProjectAssignments::class, 'project_id');
+    }
+
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'project_assignments', 'project_id', 'user_id');
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(Tasks::class, 'project_id');
+    }
 }

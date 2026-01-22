@@ -15,7 +15,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index_backup()
     {
         $list = User::with('category:id,name')
         ->select('id', 'name', 'email', 'role', 'status', 'category_id')
@@ -27,6 +27,24 @@ class UserController extends Controller
             'users' => $list
         ]);
     }
+
+    public function index()
+{
+    $list = User::with('category:id,name')
+        ->withCount([
+            'tasks as pending_task_count' => function ($q) {
+                $q->where('status', 'pending');
+            }
+        ])
+        ->orderBy('id', 'desc')
+        ->get();
+
+    return response()->json([
+        'status' => true,
+        'users'  => $list
+    ]);
+}
+
 
     /**
      * Show the form for creating a new resource.

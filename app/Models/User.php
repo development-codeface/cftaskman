@@ -57,4 +57,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Categories::class, 'category_id');
     }
+
+    public function tasks()
+    {
+        return $this->hasMany(Tasks::class, 'assigned_to'); // change column if different
+    }
 }

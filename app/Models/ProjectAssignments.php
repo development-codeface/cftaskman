@@ -27,4 +27,10 @@ class ProjectAssignments extends Model
     {
         return $this->belongsTo(Projects::class, 'project_id', 'id')->select('id','title','status');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
 }

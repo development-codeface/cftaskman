@@ -97,12 +97,12 @@ class TaskController extends Controller
         $firebase = new FirebaseNotificationService();
 
         // 🔔 Role-based notifications
-        if ($user->role === 'admin') {
+        if ($user->role === 'super_admin') {
             // Admin updated → notify all users
             $notifyUsers = User::where('id', '!=', $user->id)->pluck('id');
         } else {
             // User updated → notify admins
-            $notifyUsers = User::where('role', 'admin')->pluck('id');
+            $notifyUsers = User::where('role', 'super_admin')->pluck('id');
         }
 
         foreach ($notifyUsers as $notifyUserId) {
@@ -253,12 +253,12 @@ public function addComment(Request $request)
     ]);
 
     // 🔔 Decide who to notify
-    if ($user->role === 'admin') {
+    if ($user->role === 'super_admin') {
         // Admin commented → notify all users
         $notifyUsers = User::where('id', '!=', $user->id)->pluck('id');
     } else {
         // User commented → notify all admins
-        $notifyUsers = User::where('role', 'admin')->pluck('id');
+        $notifyUsers = User::where('role', 'super_admin')->pluck('id');
     }
 
     $firebase = new FirebaseNotificationService();

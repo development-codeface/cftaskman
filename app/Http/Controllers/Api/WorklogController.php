@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\WorkLogs;
+use App\Models\Worklogs;
 use App\Models\Project;
-use App\Models\Task;
+use App\Models\Tasks;
 use App\Models\User;
 use App\Models\Notifications;
 use App\Services\FirebaseNotificationService;
@@ -20,18 +20,17 @@ public function store(Request $request)
 {
     $validated = $request->validate([
         'task_id' => 'required|exists:tasks,id',
-        'hours'   => 'required|numeric|min:0.1',
+        'hours'   => 'required',
+        'user_id' => 'required|exists:users,id',
     ]);
 
-    $validated['user_id'] = auth()->id();
+     DB::transaction(function () use ($validated) {
 
-    DB::transaction(function () use ($validated) {
+        $worklog = Worklogs::create($validated);
 
-        $worklog = WorkLogs::create($validated);
+        $task = Tasks::findOrFail($validated['task_id']);
 
-        $task = Task::findOrFail($validated['task_id']);
-
-        $adminIds = User::where('role', 'admin')->pluck('id');
+        $adminIds = User::where('role', 'super_admin')->pluck('id');
 
         foreach ($adminIds as $adminId) {
 
@@ -63,7 +62,7 @@ public function store(Request $request)
     // GET WORKLOGS BY USER
     public function getByUser($user_id)
     {
-        $worklogs = WorkLogs::where('user_id', $user_id)
+        $worklogs = Worklogs::where('user_id', $user_id)
              ->join('tasks', 'tasks.id', '=', 'work_logs.task_id')
             ->select(
                 'work_logs.id',
