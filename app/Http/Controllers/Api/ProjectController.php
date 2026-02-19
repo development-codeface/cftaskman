@@ -58,7 +58,8 @@ class ProjectController extends Controller
                 'end_date'      => $project->end_date,
                 'description'   => $project->description,
                 'status'        => $project->status,
-                'assigned_users'=> $assignedUsers
+                'assigned_users'=> $assignedUsers,
+                'task_count'    => $project->task_count,
             ];
         });
 
@@ -142,7 +143,8 @@ class ProjectController extends Controller
             'start_date'  => $startDate,
             'end_date'    => $endDate,
             'created_by'  => $request->created_by,
-            'status'      => $request->status ?? 'to_do'
+            'status'      => $request->status ?? 'to_do',
+            'task_count'  => $request->task_count
         ]);
 
         return response()->json([

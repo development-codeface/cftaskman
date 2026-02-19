@@ -12,6 +12,10 @@ use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\FCMController; 
 
+Route::get('/test', function () {
+    return response()->json(['ok' => true]);
+});
+
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware([CheckAccessToken::class])->group(function () {
@@ -36,6 +40,8 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::get('tasks/by-project/{projectId}', [TaskController::class, 'tasksByProject']);
     Route::post('/tasks/comment', [TaskController::class, 'addComment']);
     Route::get('/tasks/list', [TaskController::class, 'taskList']);
+    Route::get('/tasks/todayTaskList', [TaskController::class, 'todayTaskList']);
+    Route::get('/tasks/overdueTaskList', [TaskController::class, 'overdueTaskList']);
     Route::get('tasks/{taskId}', [TaskController::class, 'taskDetails']);
     Route::get('/notifications/user/{user_id}', [NotificationController::class, 'getUserNotifications']);
     Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);

@@ -23,7 +23,8 @@ class Projects extends Model
         'status',
         'created_by',
         'start_date',
-        'end_date'
+        'end_date',
+        'task_count'
     ];
 
     public function categoryName()

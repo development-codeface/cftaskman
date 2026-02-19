@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
 use App\Services\FirebaseNotificationService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -9,17 +8,12 @@ use App\Models\Tasks;
 use App\Models\TaskComments;
 use App\Models\Notifications;
 use App\Models\Projects;
-use App\Models\ProjectAssignments;
-use App\Models\User;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\TaskCreateMail;
-use Carbon\Carbon;
 
 class TaskController extends Controller
 {
-
+   
     // CREATE TASK
-
+   
     public function create(Request $request)
     {
         $data = $request->validate([
@@ -28,26 +22,13 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'start_date'   => 'nullable|date',
             'end_date'     => 'nullable|date',
-            'assigned_to' => 'nullable|exists:users,id',
-            'created_by'   => 'required|exists:users,id',
-
+            'assigned_to' => 'nullable|exists:users,id'
         ]);
+
+        $data['created_by'] = auth()->id() ?? 1; // or pass from request
 
         // ---------- SEND NOTIFICATION ----------
         if (!empty($data['assigned_to'])) {
-
-            ProjectAssignments::firstOrCreate(
-            [
-                'project_id' => $data['project_id'],
-                'user_id'    => $data['assigned_to']
-            ],
-            [
-                'assigned_by' => $data['created_by'],
-                'assigned_at' => now()
-            ]
-        );
-
-            
             Notifications::create([
                 'user_id' => $data['assigned_to'],
                 'title'   => "New Task Assigned",
@@ -58,22 +39,13 @@ class TaskController extends Controller
         }
 
         $task = Tasks::create($data);
-
-        $project_title = Projects::find($request->project_id)->title;
-        $email = User::find($request->assigned_to)->email;
-
-        Mail::to($email)->send(
-            new TaskCreateMail($project_title, $request->title)
-        );
-        
-        $firebase = new FirebaseNotificationService();
-        $firebase->sendToUser(
-            $data['assigned_to'],
-            "New Task Assigned",
-            "You have been assigned: {$data['title']}",
-           // ['task_id' => $task->id]
-           ['task_id' => (string)$task->id]
-        );
+        // $firebase = new FirebaseNotificationService();
+        // $firebase->sendToUser(
+        //     $data['assigned_to'],
+        //     "New Task Assigned",
+        //     "You have been assigned: {$data['title']}",
+        //     ['task_id' => $task->id]
+        // );
 
         return response()->json([
             'status'  => true,
@@ -83,66 +55,8 @@ class TaskController extends Controller
     }
 
     //  UPDATE STATUS
-
+   
     public function updateStatus(Request $request)
-    {
-        $validated = $request->validate([
-            'task_id' => 'required|exists:tasks,id',
-            'status'  => 'required|in:todo,pending,ongoing,completed',
-        ]);
-
-        $task = Tasks::findOrFail($validated['task_id']);
-        //$task->update(['status' => $validated['status']]);
-         $updateData = ['status' => $validated['status']];
-
-        // ⏱️ Set timestamps only once
-        if ($validated['status'] === 'ongoing') {
-            $updateData['ongoing_time'] = now();
-        }
-
-        if ($validated['status'] === 'completed') {
-            $updateData['completed_time'] = now();
-        }
-
-       $task->update($updateData);
-        $user = User::findOrFail($task->assigned_to);
-
-        $firebase = new FirebaseNotificationService();
-
-        // 🔔 Role-based notifications
-        if ($user->role === 'super_admin') {
-            // Admin updated → notify all users
-            $notifyUsers = User::where('id', '!=', $user->id)->pluck('id');
-        } else {
-            // User updated → notify admins
-            $notifyUsers = User::where('role', 'super_admin')->pluck('id');
-        }
-
-        foreach ($notifyUsers as $notifyUserId) {
-
-            Notifications::create([
-                'user_id' => $notifyUserId,
-                'title'   => 'Task Status Updated',
-                'message' => "Task '{$task->title}' status changed to {$validated['status']}.",
-                'type'    => 'task',
-                'is_read' => 0
-            ]);
-
-            $firebase->sendToUser(
-                (string)$notifyUserId,
-                'Task Status Updated',
-                "Task '{$task->title}' is now {$validated['status']}.",
-                ['task_id' => (string)$task->id]
-            );
-        }
-        return response()->json([
-            'status'  => true,
-            'message' => 'Status updated successfully'
-        ]);
-    }
-
-
-    public function updateStatusxx(Request $request)
     {
         $validated = $request->validate([
             'task_id' => 'required|exists:tasks,id',
@@ -168,13 +82,13 @@ class TaskController extends Controller
                 'is_read' => 0
             ]);
 
-            $firebase = new FirebaseNotificationService();
-            $firebase->sendToUser(
-                $project_manager_id,
-                "Task Completed",
-                "Task '{$task->title}' has been completed.",
-                ['task_id' => (string)$task->id]
-            );
+            // $firebase = new FirebaseNotificationService();
+            // $firebase->sendToUser(
+            //     $project_manager_id,
+            //     "Task Completed",
+            //     "Task '{$task->title}' has been completed.",
+            //     ['task_id' => $task->id]
+            // );
         }
 
         return response()->json([
@@ -193,8 +107,8 @@ class TaskController extends Controller
             'comments.user:id,name',
             'worklogs.user:id,name'
         ])
-            ->where('assigned_to', $userId) // ✅ FILTER BY USER
-            ->orderByRaw("
+        ->where('assigned_to', $userId) // ✅ FILTER BY USER
+        ->orderByRaw("
             CASE status
                 WHEN 'todo' THEN 1
                 WHEN 'pending' THEN 2
@@ -203,8 +117,8 @@ class TaskController extends Controller
                 ELSE 5
             END
         ")
-            ->orderBy('end_date', 'asc')
-            ->get();
+        ->orderBy('end_date', 'asc')
+        ->get();
 
         $response = $tasks->map(function ($task) {
             return [
@@ -217,16 +131,6 @@ class TaskController extends Controller
                 'projectname' => $task->project?->title,
                 'status' => $task->status,
                 'assignedEmployee' => $task->assignedUser?->name,
-
-                 // 🕒 Clock time object
-                'clocktime' => [
-                    'ongoing_time'   => $task->ongoing_time
-                        ? $task->ongoing_time->format('Y-m-d H:i')
-                        : null,
-                    'completed_time' => $task->completed_time
-                        ? $task->completed_time->format('Y-m-d H:i')
-                        : null,
-                ],
 
                 // ✅ Comments
                 'comments' => $task->comments->map(function ($comment) {
@@ -258,59 +162,7 @@ class TaskController extends Controller
 
 
     //  ADD COMMENT
-public function addComment(Request $request)
-{
-    $validated = $request->validate([
-        'task_id' => 'required|exists:tasks,id',
-        'comment' => 'required|string',
-        'user_id' => 'required|exists:users,id'
-    ]);
-
-    $user = User::findOrFail($validated['user_id']); // logged-in user
-    $task = Tasks::findOrFail($validated['task_id']);
-
-    TaskComments::create([
-        'task_id' => $task->id,
-        'comment' => $validated['comment'],
-        'user_id' => $validated['user_id'],
-    ]);
-
-    // 🔔 Decide who to notify
-    if ($user->role === 'super_admin') {
-        // Admin commented → notify all users
-        $notifyUsers = User::where('id', '!=', $user->id)->pluck('id');
-    } else {
-        // User commented → notify all admins
-        $notifyUsers = User::where('role', 'super_admin')->pluck('id');
-    }
-
-    $firebase = new FirebaseNotificationService();
-
-    foreach ($notifyUsers as $notifyUserId) {
-
-        Notifications::create([
-            'user_id' => $notifyUserId,
-            'title'   => 'New Task Comment',
-            'message' => "New comment on task '{$task->title}'",
-            'type'    => 'comment',
-            'is_read' => 0
-        ]);
-
-        $firebase->sendToUser(
-            (string)$notifyUserId,
-            'New Task Comment',
-            "New comment on task: {$task->title}",
-            ['task_id' => (string)$task->id]
-        );
-    }
-
-    return response()->json([
-        'status'  => true,
-        'message' => 'Comment added successfully'
-    ]);
-}
-
-    public function addCommentxx(Request $request)
+     public function addComment(Request $request)
     {
         $validated = $request->validate([
             'task_id' => 'required|exists:tasks,id',
@@ -330,13 +182,13 @@ public function addComment(Request $request)
             'is_read' => 0
         ]);
 
-        $firebase = new FirebaseNotificationService();
-        $firebase->sendToUser(
-            $task->created_by,
-            "New Comment",
-            "A new comment was added to your task: {$task->title}",
-            ['task_id' => (string)$task->id]
-        );
+        // $firebase = new FirebaseNotificationService();
+        // $firebase->sendToUser(
+        //     $task->created_by,
+        //     "New Comment",
+        //     "A new comment was added to your task: {$task->title}",
+        //     ['task_id' => $task->id]
+        // );
 
         return response()->json([
             'status'  => true,
@@ -346,16 +198,16 @@ public function addComment(Request $request)
 
 
 
-    public function taskList()
+     public function taskList()
     {
-        $tasks = Tasks::with([
+            $tasks = Tasks::with([
             'project:id,title',
             'assignedUser:id,name',
             'comments:id,task_id,user_id,comment,created_at',
             'comments.user:id,name',
             'worklogs.user:id,name'
         ])
-            ->orderByRaw("
+        ->orderByRaw("
             CASE status
                 WHEN 'todo' THEN 1
                 WHEN 'pending' THEN 2
@@ -364,8 +216,8 @@ public function addComment(Request $request)
                 ELSE 5
             END
         ")
-            ->orderBy('end_date', 'asc')
-            ->get();
+        ->orderBy('end_date', 'asc')
+        ->get();
 
         $response = $tasks->map(function ($task) {
             return [
@@ -397,7 +249,7 @@ public function addComment(Request $request)
                         'user_id'   => $log->user_id,
                         'user_name' => $log->user?->name,
                         'hours'     => $log->hours,
-                        'createdAt' => $log->created_at
+                       'createdAt' => $log->created_at
                             ? $log->created_at->format('Y-m-d H:i')
                             : null
                     ];
@@ -410,142 +262,6 @@ public function addComment(Request $request)
             'tasks'  => $response
         ]);
     }
-
-public function todayTaskList()
-{
-    $today = Carbon::today();
-
-    $tasks = Tasks::with([
-        'project:id,title',
-        'assignedUser:id,name',
-        'comments:id,task_id,user_id,comment,created_at',
-        'comments.user:id,name',
-        'worklogs.user:id,name'
-    ])
-         ->where(function ($query) use ($today) {
-        $query->whereDate('start_date', $today)
-              ->orWhereDate('end_date', $today);
-    })
-        ->whereIn('status', ['todo', 'pending', 'ongoing'])
-        ->orderByRaw("
-            CASE status
-                WHEN 'todo' THEN 1
-                WHEN 'pending' THEN 2
-                WHEN 'ongoing' THEN 3
-                ELSE 4
-            END
-        ")
-        ->get();
-
-    $response = $tasks->map(function ($task) {
-        return [
-            'id' => $task->id,
-            'title' => $task->title,
-            'description' => $task->description,
-            'startDate' => $task->start_date,
-            'endDate' => $task->end_date,
-            'projectid' => $task->project_id,
-            'projectname' => $task->project?->title,
-            'status' => $task->status,
-            'assignedEmployee' => $task->assignedUser?->name,
-
-            'clocktime' => [
-                'ongoing_time' => $task->ongoing_time
-                    ? $task->ongoing_time->format('Y-m-d H:i')
-                    : null,
-                'completed_time' => $task->completed_time
-                    ? $task->completed_time->format('Y-m-d H:i')
-                    : null,
-            ],
-
-            'comments' => $task->comments->map(function ($comment) {
-                return [
-                    'user_id'   => $comment->user_id,
-                    'user_name' => $comment->user?->name,
-                    'message'   => $comment->comment,
-                    'createdAt' => optional($comment->created_at)->format('Y-m-d H:i')
-                ];
-            }),
-
-            'worklogs' => $task->worklogs->map(function ($log) {
-                return [
-                    'user_id'   => $log->user_id,
-                    'user_name' => $log->user?->name,
-                    'hours'     => $log->hours,
-                    'createdAt' => optional($log->created_at)->format('Y-m-d H:i')
-                ];
-            })
-        ];
-    });
-
-    return response()->json([
-        'status' => true,
-        'tasks'  => $response
-    ]);
-}
-public function overdueTaskList()
-{
-    $today = Carbon::today();
-
-    $tasks = Tasks::with([
-        'project:id,title',
-        'assignedUser:id,name',
-        'comments:id,task_id,user_id,comment,created_at',
-        'comments.user:id,name',
-        'worklogs.user:id,name'
-    ])
-        ->whereDate('end_date', '<', $today)
-        ->whereIn('status', ['pending'])
-        ->orderBy('end_date', 'asc')
-        ->get();
-
-    $response = $tasks->map(function ($task) {
-        return [
-            'id' => $task->id,
-            'title' => $task->title,
-            'description' => $task->description,
-            'startDate' => $task->start_date,
-            'endDate' => $task->end_date,
-            'projectid' => $task->project_id,
-            'projectname' => $task->project?->title,
-            'status' => $task->status,
-            'assignedEmployee' => $task->assignedUser?->name,
-
-            'clocktime' => [
-                'ongoing_time' => $task->ongoing_time
-                    ? $task->ongoing_time->format('Y-m-d H:i')
-                    : null,
-                'completed_time' => $task->completed_time
-                    ? $task->completed_time->format('Y-m-d H:i')
-                    : null,
-            ],
-
-            'comments' => $task->comments->map(function ($comment) {
-                return [
-                    'user_id'   => $comment->user_id,
-                    'user_name' => $comment->user?->name,
-                    'message'   => $comment->comment,
-                    'createdAt' => optional($comment->created_at)->format('Y-m-d H:i')
-                ];
-            }),
-
-            'worklogs' => $task->worklogs->map(function ($log) {
-                return [
-                    'user_id'   => $log->user_id,
-                    'user_name' => $log->user?->name,
-                    'hours'     => $log->hours,
-                    'createdAt' => optional($log->created_at)->format('Y-m-d H:i')
-                ];
-            })
-        ];
-    });
-
-    return response()->json([
-        'status' => true,
-        'tasks'  => $response
-    ]);
-}
-
 
     public function taskDetails($taskId)
     {
@@ -575,16 +291,6 @@ public function overdueTaskList()
             'status' => $task->status,
             'assignedEmployee' => $task->assignedUser?->name,
 
-             // 🕒 Clock time object (✅ CORRECT)
-            'clocktime' => [
-                'ongoing_time' => $task->ongoing_time
-                    ? $task->ongoing_time->format('Y-m-d H:i')
-                    : null,
-                'completed_time' => $task->completed_time
-                    ? $task->completed_time->format('Y-m-d H:i')
-                    : null,
-            ],
-
             'comments' => $task->comments->map(function ($comment) {
                 return [
                     'user_id'   => $comment->user_id,
@@ -612,22 +318,22 @@ public function overdueTaskList()
 
     public function tasksByUserAndProject(Request $request)
     {
-
+        
         $validated = $request->validate([
             'user_id'    => 'required|exists:users,id',
             'project_id' => 'required|exists:projects,id'
         ]);
 
         $tasks = Tasks::with([
-            'project:id,title',
-            'assignedUser:id,name',
-            'comments:id,task_id,user_id,comment,created_at',
-            'comments.user:id,name',
-            'worklogs.user:id,name'
+        'project:id,title',
+        'assignedUser:id,name',
+        'comments:id,task_id,user_id,comment,created_at',
+        'comments.user:id,name',
+        'worklogs.user:id,name'
         ])
-            ->where('assigned_to', $validated['user_id'])
-            ->where('project_id', $validated['project_id'])
-            ->orderByRaw("
+        ->where('assigned_to', $validated['user_id'])
+        ->where('project_id', $validated['project_id'])
+        ->orderByRaw("
             CASE status
                 WHEN 'todo' THEN 1
                 WHEN 'pending' THEN 2
@@ -636,8 +342,8 @@ public function overdueTaskList()
                 ELSE 5
             END
         ")
-            ->orderBy('end_date', 'asc')
-            ->get();
+        ->orderBy('end_date', 'asc')
+        ->get();
 
         $response = $tasks->map(function ($task) {
             return [
@@ -685,8 +391,8 @@ public function overdueTaskList()
             'comments.user:id,name',
             'worklogs.user:id,name'
         ])
-            ->where('project_id', $projectId)
-            ->orderByRaw("
+        ->where('project_id', $projectId)
+        ->orderByRaw("
             CASE status
                 WHEN 'todo' THEN 1
                 WHEN 'pending' THEN 2
@@ -695,9 +401,9 @@ public function overdueTaskList()
                 ELSE 5
             END
         ")
-            ->orderBy('end_date', 'asc')
-            ->get();
-
+        ->orderBy('end_date', 'asc')
+        ->get();
+        
         if ($tasks->isEmpty()) {
             return response()->json([
                 'status' => false,
@@ -740,4 +446,8 @@ public function overdueTaskList()
             'tasks' => $response
         ]);
     }
+
+
+
+
 }

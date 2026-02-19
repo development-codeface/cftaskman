@@ -16,7 +16,14 @@ class Tasks extends Model
         'end_date',
         'status',
         'created_by',
-        'assigned_to'
+        'assigned_to',
+        'ongoing_time',
+        'completed_time'
+    ];
+
+        protected $casts = [
+        'ongoing_time'   => 'datetime',
+        'completed_time' => 'datetime',
     ];
 
       public function project()
