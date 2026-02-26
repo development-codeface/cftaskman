@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\WorklogController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\FCMController; 
+use App\Http\Controllers\Api\AttendanceController; 
+use App\Http\Controllers\Api\UserLinkController; 
 
 Route::get('/test', function () {
     return response()->json(['ok' => true]);
@@ -26,6 +28,7 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::post('users/checkstatus', [UserController::class, 'checkUserStatus']);
     Route::post('/category/store', [CategoryController::class, 'store']);
     Route::get('/category/list', [CategoryController::class, 'index']);
+    Route::post('/category/update/{id}', [CategoryController::class, 'update']);
     Route::post('/project/store', [ProjectController::class, 'store']);
     Route::post('/project/update-status', [ProjectController::class, 'updateStatus']);
     Route::get('/project/list', [ProjectController::class, 'index']);
@@ -46,5 +49,15 @@ Route::middleware([CheckAccessToken::class])->group(function () {
     Route::get('/notifications/user/{user_id}', [NotificationController::class, 'getUserNotifications']);
     Route::post('/notifications/read', [NotificationController::class, 'markAsRead']);
     Route::post('/save-fcm-token', [FCMController::class, 'saveToken']);
+    // ATTENDANCE
+    Route::post('/attendance/clockin', [AttendanceController::class, 'clockIn']);
+    Route::post('/attendance/clockout', [AttendanceController::class, 'clockOut']);
+    Route::get('/attendance/report/{user_id}', [AttendanceController::class, 'report']);
+    Route::get('/attendance/today-status/{user_id}', [AttendanceController::class, 'todayStatus']);
+
+    Route::post('/links/add',[UserLinkController::class,'store']);
+    Route::get('/links/list',[UserLinkController::class,'list']);
+    Route::post('/links/update/{id}',[UserLinkController::class,'update']);
+
 
 });

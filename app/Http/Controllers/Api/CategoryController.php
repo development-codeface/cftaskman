@@ -61,6 +61,7 @@ class CategoryController extends Controller
         ]);
     }
 
+
     /**
      * Display the specified resource.
      */
@@ -80,9 +81,37 @@ class CategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation errors',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $category = Categories::find($id);
+
+        if(!$category){
+            return response()->json([
+                'status'=>false,
+                'message'=>'Category not found'
+            ],404);
+        }
+
+        $category->update([
+            'name' => $request->name
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Category updated successfully'
+        ]);
     }
 
     /**

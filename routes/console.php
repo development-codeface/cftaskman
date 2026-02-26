@@ -12,3 +12,7 @@ Artisan::command('inspire', function () {
 Schedule::command('tasks:daily-reminder')
     ->dailyAt('09:00')
     ->timezone('Asia/Kolkata');
+
+Schedule::command('attendance:auto-checkout')
+    ->dailyAt('23:59')
+    ->timezone('Asia/Kolkata');
